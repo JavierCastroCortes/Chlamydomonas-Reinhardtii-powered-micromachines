@@ -40,7 +40,6 @@ COEFICIENTE_ARRASTRE_CONTAMINANTES = 1e-26  # k, ajustable
 DENSIDAD_CONTAMINANTES_BASE = 1e12  # partículas/m³, ajustable
 
 #parámetros para el modelo de captura
-#DENSIDAD_INICIAL_CONTAMINANTES = 1e15  # partículas/m³
 DENSIDAD_INICIAL_CONTAMINANTES = 11340  # partículas/m³
 EFICIENCIA_CAPTURA = 0.1  # Probabilidad de capturar una partícula
 AREA_EFECTIVA_CAPTURA = (10e-7)**2  # Área efectiva de captura (m²)
@@ -180,7 +179,7 @@ def calc_error_cuad_medio(posiciones_simuladas):
             print(f"Archivo de trayectoria no encontrado: {ruta_trayectoria}")
             return float('inf'), float('inf')
 
-# Obtener la velocidad promedio de la micromáquina  
+#obbtenemos la velocidad promedio de la micromáquina  
 def get_micromachine_velocity(voxel_bodies):
         velocities = []
         for voxel in voxel_bodies:
@@ -190,15 +189,10 @@ def get_micromachine_velocity(voxel_bodies):
         avg_velocity = np.mean(velocities, axis=0)
         return avg_velocity
 
-# Guardar datos con timestamps 
+#guardamos los datos con timestamps 
 def save_data_time(m,vels_sistem, tray_sistem, dt=1/240, filename="simulacion_con_tiempo.json"):
         #se crea la lista de tiempos
-        '''
-         vels_sistem, 
-            tray_sistem, 
-            duracion_total=duracion,
-            filename=f"simulacion_{chromosome_id}_con_tiempo.json")
-        '''
+        
         tiempos = [i * dt for i in range(len(vels_sistem))]
         datos = {
             "metadata": {
@@ -235,7 +229,7 @@ def aplicar_fuerza_arrastre_sin_contaminantes():
     # se calcula la fuerza de arrastre para toda la estructura
     fuerza_arrastre_total = -6 * math.pi * VISCOSIDAD_AGUA * RADIO_CARACTERISTICO * vel_promedio
     
-    # Distribuir fuerza por masa relativa
+    #distribuir fuerza por masa relativa
     for body in voxel_bodies:
         p.applyExternalForce(body, -1, 
                            forceObj=fuerza_arrastre_total.tolist(), 
@@ -244,7 +238,7 @@ def aplicar_fuerza_arrastre_sin_contaminantes():
 
 def aplicar_fuerza_arrastre_con_contaminantes_anterior():
     """Aplica fuerza de arrastre al centro de masa de toda la micromáquina, incluyendo contaminantes"""
-    # Calcular velocidad del centro de masa
+    #calcular velocidad del centro de masa
     vel_total = np.zeros(3)
     #pos_total = np.zeros(3)
     for body in voxel_bodies:
@@ -253,28 +247,27 @@ def aplicar_fuerza_arrastre_con_contaminantes_anterior():
         vel_promedio = vel_total / len(voxel_bodies)
     #pos_promedio = pos_total / len(voxel_bodies)  # centro de masa
 
-    # Fuerza de arrastre hidrodinámica
+    #fuerza de arrastre hidrodinámica
     fuerza_arrastre_hidro = -6 * math.pi * VISCOSIDAD_AGUA * RADIO_CARACTERISTICO * vel_promedio
 
-    # Fuerza de arrastre debido a contaminantes (densidad constante)
+    #fuerza de arrastre debido a contaminantes (densidad constante)
     fuerza_arrastre_contaminantes = -COEFICIENTE_ARRASTRE_CONTAMINANTES * DENSIDAD_CONTAMINANTES_BASE * vel_promedio
 
-    # Fuerza total de arrastre
+    #fuerza total de arrastre
     fuerza_arrastre_total = fuerza_arrastre_hidro + fuerza_arrastre_contaminantes
 
-    # Distribuir fuerza por masa relativa? En realidad, estamos aplicando la misma fuerza a cada voxel.
-    # Pero quizás sería mejor distribuirla por masa. Sin embargo, en el código actual se aplica la misma fuerza a cada voxel.
+    ##distribuir por masa
     for body in voxel_bodies:
         p.applyExternalForce(body, -1, 
                            forceObj=fuerza_arrastre_total.tolist(), 
                            posObj=[0, 0, 0], 
                            flags=p.LINK_FRAME)
 
-# Calcular la longitud acumulada de una trayectoria 3D
+# calcular la longitud acumulada de una trayectoria 3D
 def longitud_acumulada(trayectoria):
     
-    #Calculamos la longitud acumulada de una trayectoria 3D
-    # Diferencias entre puntos consecutivos
+    #calculamos la longitud acumulada de una trayectoria 3D
+    #diferencias entre puntos consecutivos
     deltas = np.diff(trayectoria, axis=0)  # tamaño (N-1,3)
     
     #normas de cada vector delta (distancia entre puntos consecutivos)
@@ -291,7 +284,7 @@ def obtener_densidad_region(pos):
     return densidad_contaminantes_regiones.get(region, DENSIDAD_INICIAL_CONTAMINANTES)
 
 def actualizar_densidad_region(pos, particulas_capturadas):
-    """Reduce la densidad en una región después de capturar partículas"""
+    #Reduce la densidad en una región después de capturar partículas
     region = tuple((np.array(pos) // TAMANO_REGION).astype(int))
     if region not in densidad_contaminantes_regiones:
         densidad_contaminantes_regiones[region] = DENSIDAD_INICIAL_CONTAMINANTES
@@ -302,7 +295,7 @@ def actualizar_densidad_region(pos, particulas_capturadas):
                                                  particulas_capturadas / volumen_region)
 
 def aplicar_fuerza_arrastre_con_captura():
-    """Aplica fuerza de arrastre y simula captura de partículas contaminantes"""
+    #Aplica fuerza de arrastre y simula captura de partículas contaminantes
     global masa_micromaquina  
     
     # Calcular velocidad y posición del centro de masa
