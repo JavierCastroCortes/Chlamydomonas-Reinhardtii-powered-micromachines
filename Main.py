@@ -12,7 +12,7 @@ from trayectoria_micromaquina import plot_trajectory_from_json
 from save_general_simulation_data import save_general_simulation_data
 
 
-PATH_GRAL = "/Users/javimalikian/Documents/Tesis Master/Tesis Master/Algoritmos/PeerJ code/"
+PATH_GRAL = ""
 VISCOSIDAD_AGUA = 8.9e-4  # Pa·s (viscosidad a 25°C)
 RADIO_CARACTERISTICO = 7e-6  # 5 μm
 
@@ -71,7 +71,7 @@ def load_micromachine_new_format(filename):
         with open(filename, 'r') as f:
             data = json.load(f)
         
-        # Extraer la lista de voxels
+        #xtraemos la lista de voxels
         voxels_parametros = data["voxels"]
         chromosome_id = data.get("id", "unknown")
         
@@ -96,7 +96,7 @@ def crete_voxel(masa=120e-10, tamano=0.5, posicion=[0,0,0], color=1):
         return body
 
 def crea_constraints():
-        voxel_size = 1.0  # Ajusta según la separación entre centros de voxels
+        voxel_size = 1.0  # esto justa según la separación entre centros de voxels 
         for i, voxel_i in enumerate(voxels_parametros):
             pos_i = np.array(voxel_i["p"])
             for j, voxel_j in enumerate(voxels_parametros[i+1:], start=i+1):  # Evita duplicados
@@ -192,7 +192,7 @@ def get_micromachine_velocity(voxel_bodies):
 
 # Guardar datos con timestamps 
 def save_data_time(m,vels_sistem, tray_sistem, dt=1/240, filename="simulacion_con_tiempo.json"):
-        # Crear lista de tiempos
+        #se crea la lista de tiempos
         '''
          vels_sistem, 
             tray_sistem, 
@@ -217,7 +217,7 @@ def save_data_time(m,vels_sistem, tray_sistem, dt=1/240, filename="simulacion_co
             ]
         }
         
-        # Guardar en chunks para evitar problemas de memoria
+        # guardamos en chunks para evitar problemas de memoria
         with open(filename, 'w') as f:
             json.dump(datos, f, indent=2)
         print(f"Datos con timestamp guardados en {filename}")
@@ -225,14 +225,14 @@ def save_data_time(m,vels_sistem, tray_sistem, dt=1/240, filename="simulacion_co
 #aplicar fuerza de arrastrea cada uno de los voxels
 def aplicar_fuerza_arrastre_sin_contaminantes():
     """Aplica fuerza de arrastre al centro de masa de toda la micromáquina"""
-    # Calcular velocidad del centro de masa
+    # se calcula la  velocidad del centro de masa
     vel_total = np.zeros(3)
     for body in voxel_bodies:
         vel, _ = p.getBaseVelocity(body)
         vel_total += np.array(vel)
         vel_promedio = vel_total / len(voxel_bodies)
     
-    # Fuerza de arrastre para toda la estructura
+    # se calcula la fuerza de arrastre para toda la estructura
     fuerza_arrastre_total = -6 * math.pi * VISCOSIDAD_AGUA * RADIO_CARACTERISTICO * vel_promedio
     
     # Distribuir fuerza por masa relativa
@@ -272,22 +272,15 @@ def aplicar_fuerza_arrastre_con_contaminantes_anterior():
 
 # Calcular la longitud acumulada de una trayectoria 3D
 def longitud_acumulada(trayectoria):
-    """
-    Calcula la longitud acumulada de una trayectoria 3D.
     
-    Parámetros:
-        trayectoria (np.ndarray): matriz de tamaño (N,3) con coordenadas [x, y, z].
-    
-    Retorna:
-        np.ndarray: vector de tamaño N con la distancia acumulada desde el inicio hasta cada punto.
-    """
+    #Calculamos la longitud acumulada de una trayectoria 3D
     # Diferencias entre puntos consecutivos
     deltas = np.diff(trayectoria, axis=0)  # tamaño (N-1,3)
     
-    # Normas de cada vector delta (distancia entre puntos consecutivos)
+    #normas de cada vector delta (distancia entre puntos consecutivos)
     distancias = np.linalg.norm(deltas, axis=1)
     
-    # Longitud acumulada, insertando 0 al inicio
+    #longitud acumulada, insertando 0 al inicio
     longitud = np.insert(np.cumsum(distancias), 0, 0)
     
     return longitud
@@ -303,14 +296,14 @@ def actualizar_densidad_region(pos, particulas_capturadas):
     if region not in densidad_contaminantes_regiones:
         densidad_contaminantes_regiones[region] = DENSIDAD_INICIAL_CONTAMINANTES
     
-    # Reducir densidad proporcionalmente a las partículas capturadas
+    # se reduce densidad proporcionalmente a las partículas capturadas
     volumen_region = TAMANO_REGION**3
     densidad_contaminantes_regiones[region] = max(0, densidad_contaminantes_regiones[region] - 
                                                  particulas_capturadas / volumen_region)
 
 def aplicar_fuerza_arrastre_con_captura():
     """Aplica fuerza de arrastre y simula captura de partículas contaminantes"""
-    global masa_micromaquina  # Declarar que usamos la variable global
+    global masa_micromaquina  
     
     # Calcular velocidad y posición del centro de masa
     vel_total = np.zeros(3)
@@ -324,45 +317,46 @@ def aplicar_fuerza_arrastre_con_captura():
     vel_promedio = vel_total / len(voxel_bodies)
     pos_promedio = pos_total / len(voxel_bodies)
     
-    # Obtener densidad en la posición actual
+    #se oobtiene la densidad en la posición actual
     densidad_actual = obtener_densidad_region(pos_promedio)
     
-    # Calcular partículas potencialmente capturables
+    # calculamos las partículas potencialmente capturables
     tasa_captura_potencial = densidad_actual * AREA_EFECTIVA_CAPTURA * np.linalg.norm(vel_promedio)
     particulas_capturables = tasa_captura_potencial * (1/240)  # partículas por paso de simulación
     
-    # Simular captura (probabilística)
+    # Simulamos captura por probabilidad
     particulas_capturadas = np.random.poisson(particulas_capturables * EFICIENCIA_CAPTURA)
     
     if particulas_capturadas > 0:
-        # Actualizar masa de la micromáquina
+        # actualizar masa de la micromáquina dadas las partículas por paso 
         masa_adicional = particulas_capturadas * MASA_POR_PARTICULA
         masa_micromaquina += masa_adicional
         
-        # Actualizar densidad en la región
-        actualizar_densidad_region(pos_promedio, particulas_capturadas)
         
-        #print(f"Capturadas {particulas_capturadas} partículas. Masa actual: {masa_micromaquina:.2e} kg")
+        actualizar_densidad_region(pos_promedio, particulas_capturadas)
     
-    # Fuerza de arrastre hidrodinámica (Stokes)
+    # se calcula la fuerza de arrastre hidrodinámica (Stokes)
     radio_efectivo = (3 * masa_micromaquina / (4 * np.pi * 1000))**(1/3)  # Radio equivalente asumiendo densidad agua
     fuerza_arrastre_hidro = -6 * math.pi * VISCOSIDAD_AGUA * radio_efectivo * vel_promedio
     
     # Fuerza de arrastre adicional por contaminantes (depende de la densidad local)
     fuerza_arrastre_contaminantes = -COEFICIENTE_ARRASTRE_CONTAMINANTES * densidad_actual * vel_promedio
     
-    # Fuerza total de arrastre
+    # sumamos las fuerzas de arrastre calculadas
     fuerza_arrastre_total = fuerza_arrastre_hidro + fuerza_arrastre_contaminantes
     
-    # Aplicar fuerza a todos los voxels
+    # aplicar fuerza a todos los voxels
     for body in voxel_bodies:
         p.applyExternalForce(body, -1, 
                            forceObj=fuerza_arrastre_total.tolist(), 
                            posObj=[0, 0, 0], 
                            flags=p.LINK_FRAME)
-# Bucle principal de simulación coon generacion y cada simulación
+#---------------------------------------------------------------------------------------------------------
+#bucle principal de simulación coon generacion y cada simulación
 #primer bucle es para las micromáquinas
 #segundo bucle es para cada una de las simulaciones
+#tercero es para implementar la simulación de pybullett
+#---------------------------------------------------------------------------------------------------------
 for m in range(5,6):
     #creamos las variabe
     vels_sistem_gral=[]
