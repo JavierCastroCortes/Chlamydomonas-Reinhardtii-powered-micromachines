@@ -140,7 +140,7 @@ def aplicar_fuerzas_alga():
                     force_vector = np.array([random_force_1, random_force_2, alga_force])
                 #print(f"Aplicando fuerza {force_vector} al voxel {idx} en posición {voxel['p']}")
                         
-                # Aplicar fuerza según el vector especificado en el JSON
+                #aplicamos fuerza según el vector especificado en el JSON
                 p.applyExternalForce(voxel_bodies[idx], -1, forceObj=force_vector.tolist(), posObj=[0, 0, 0], flags=p.LINK_FRAME)
 
 # Obtener la velocidad lineal y convertir a μm/s
@@ -387,8 +387,8 @@ for m in range(5,6):
 
         force_vector = np.array([1, -1, 0]) 
     
-        #cargamos la micromáquina en el nuevo formato
-        #'/Users/javimalikian/Documents/Tesis Master/Tesis Master/Algoritmos/PeerJ code/M1.json'
+        #cargamos la micromáquina
+       
         ruta_micromaquina = PATH_GRAL + f"M{m}/M{m}.json"
         voxels_parametros, micromachine_id = load_micromachine_new_format(ruta_micromaquina)
         
@@ -482,7 +482,7 @@ for m in range(5,6):
             dt=dt,
             filename=f"M{m}/m_{m}_simulacion{i}_{micromachine_id}.json")
         
-        # Crear gráficos
+        # gráficos
         archivo_simulacion = PATH_GRAL+ f"M{m}/m_{m}_simulacion{i}_{micromachine_id}.json"
         plot_trajectory_from_json(i,m,f'M{m}/m_{m}_simulacion{i}_{micromachine_id}.json')
 
